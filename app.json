@@ -3,6 +3,7 @@
     "name": "playas-uy-app",
     "slug": "playas-uy-app",
     "version": "1.0.0",
+		"scheme": "playas-uy-scheme",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -24,6 +25,13 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "expo-router"
+    ],
+		"extra": {
+			"EXPO_PUBLIC_CLIENT_ID": "${EXPO_PUBLIC_CLIENT_ID}",
+			"EXPO_PUBLIC_CLIENT_SECRET": "${EXPO_PUBLIC_CLIENT_SECRET}"
+		}
   }
 }

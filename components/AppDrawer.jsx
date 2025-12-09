@@ -1,4 +1,4 @@
-import { Modal, TouchableOpacity, Animated } from "react-native";
+import { Modal, TouchableOpacity, Animated, View } from "react-native";
 import { useRef, useEffect } from "react";
 
 export function AppDrawer({ visible, onClose, children }) {
@@ -40,15 +40,22 @@ export function AppDrawer({ visible, onClose, children }) {
         <Animated.View
           onStartShouldSetResponder={() => true}
           style={{
-            backgroundColor: "white",
-            borderTopLeftRadius: 20,
-            borderTopRightRadius: 20,
-            padding: 20,
-            paddingBottom: 40,
+						backgroundColor: "transparent",
+						padding: 20,
+						paddingBottom: 30,            
             transform: [{ translateY: slideAnim }],
           }}
         >
+					<View
+						style={{
+							backgroundColor: "white",
+							borderRadius: 20,
+							padding: 20,
+							paddingBottom: 10,
+						}}
+					>
           {children}
+					</View>
         </Animated.View>
       </TouchableOpacity>
     </Modal>

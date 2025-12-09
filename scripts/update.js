@@ -1,7 +1,7 @@
 // update.js
 const https = require("https");
 const querystring = require("querystring");
-const { Client, Databases, ID } = require("appwrite");
+const { Client, Databases, ID, Query } = require("appwrite");
 require('dotenv').config();
 
 const client = new Client()
@@ -17,7 +17,7 @@ async function saveLifeguardStations(stations) {
   console.log(`💾 Guardando ${stations.length} estaciones en Appwrite...`);
 
   // 1) obtener todos los docs actuales
-  const current = await databases.listDocuments(databaseId, collectionId);
+  const current = await databases.listDocuments(databaseId, collectionId, [Query.limit(100)]);
 
   // 2) borrar todos (modo simple)
   for (const doc of current.documents) {
@@ -26,23 +26,36 @@ async function saveLifeguardStations(stations) {
 
   // 3) crear nuevos documentos
   for (const station of stations) {
+    const [lat, lon] = [
+      station.location.coordinates[1],
+      station.location.coordinates[0]
+    ];
+
+    const weather = await getTemperature(lat, lon);
+    const barrio = await getBarrio(lat, lon);
+    console.log('barrio', barrio);
+    const googleRating = await getGoogleRatingByName(station.name);
+
     // The 'data' object containing the document's fields
     const documentData = {
       name: station.name,
       address: station.address,
       beach: station.beach,
       healthFlag: station.healthFlag || '',
-      safetyFlag: station.safetyFlag,
-      coordinates: [station.location.coordinates[1], station.location.coordinates[0]],
+      safetyFlag: station.safetyFlag || '',
+      coordinates: [lat, lon],
+      temperature: weather?.temperature,
+      weathercode: weather?.weathercode,
+      suburb: barrio?.suburb || barrio?.neighbourhood || '',
     };
 
     const response = await databases.createDocument(
       databaseId,
       collectionId,
       ID.unique(),
-      documentData // The 'data' object is passed here
+      documentData
     );
-    // console.log('Document created successfully:', response);
+    console.log('Document created successfully:', response);
   }
 
   console.log("✔ Datos guardados correctamente en Appwrite.");
@@ -173,6 +186,75 @@ async function getBeaches(retries = 1) {
   }
 
 
+}
+
+// async function getGoogleRatingByName(name) {
+//   const apiKey = process.env.GOOGLE_API_KEY;
+
+//   const find = await httpsRequest({
+//     method: "GET",
+//     hostname: "maps.googleapis.com",
+//     path: `/maps/api/place/findplacefromtext/json?input=${encodeURIComponent(name + " Montevideo")}&inputtype=textquery&fields=place_id&key=${apiKey}`
+//   });
+
+//   const parsed = JSON.parse(find.body);
+
+//   if (!parsed.candidates?.length) return null;
+
+//   const placeId = parsed.candidates[0].place_id;
+
+//   const details = await httpsRequest({
+//     method: "GET",
+//     hostname: "maps.googleapis.com",
+//     path: `/maps/api/place/details/json?place_id=${placeId}&fields=rating,user_ratings_total&key=${apiKey}`
+//   });
+
+//   return JSON.parse(details.body).result || null;
+// }
+
+async function getTemperature(lat, lon) {
+  const res = await httpsRequest({
+    method: "GET",
+    hostname: "api.open-meteo.com",
+    path: `/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`
+  });
+
+  ensureJson(res.body);
+
+  const parsed = JSON.parse(res.body);
+  return parsed.current_weather ?? null;
+}
+
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function getBarrio(lat, lon) {
+  const res = await httpsRequest({
+    method: "GET",
+    hostname: "nominatim.openstreetmap.org",
+    path: `/reverse?format=json&lat=${lat}&lon=${lon}&addressdetails=1&zoom=18`,
+    headers: {
+      "User-Agent": "playas-uy-app/1.0 (contacto@example.com)"
+    }
+  });
+
+  // Delay requerido por Nominatim (1 segundo)
+  await delay(1000);
+
+  ensureJson(res.body);
+
+  const parsed = JSON.parse(res.body);
+
+  // barrio = suburb / neighbourhood / quarter
+  return parsed.address ?? null;
+}
+
+function ensureJson(body) {
+  if (!body || typeof body !== "string") throw new Error("Respuesta vacía");
+  if (body.trim().startsWith("<")) {
+    throw new Error("Respuesta HTML inesperada:\n" + body.slice(0, 500));
+  }
 }
 
 // Ejecutar cuando corras `node update.js`

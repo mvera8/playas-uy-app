@@ -30,13 +30,13 @@ export default function Page() {
 					keyExtractor={(item) => item.$id}
 					ListHeaderComponent={() => (
 						<Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 16 }}>
-							Puestos de Guardavidas
+							Puestos de Guardavidas: {data?.total ?? 0}
 						</Text>
 					)}
-					renderItem={({ item }) => (
+					renderItem={({ item, index }) => (
 						<View style={{ paddingTop: 10, paddingBottom: 10, borderBottomWidth: 1, borderColor: "#ddd" }}>
 							<Text style={{ fontSize: 18, fontWeight: "bold" }}>
-								{item.name}
+								{index + 1}. {item.name}
 							</Text>
 							<Text style={{ color: "#666" }}>
 								{item.beach}

@@ -1,4 +1,4 @@
-import { Client, Databases } from 'appwrite'
+import { Client, Databases, Query } from 'appwrite'
 
 const client = new Client()
   .setEndpoint(process.env.EXPO_PUBLIC_APPWRITE_ENDPOINT)
@@ -11,7 +11,8 @@ export const beachService = {
     try {
       const response = await databases.listDocuments(
         process.env.EXPO_PUBLIC_APPWRITE_DATABSE,
-        process.env.EXPO_PUBLIC_APPWRITE_TABLE
+        process.env.EXPO_PUBLIC_APPWRITE_TABLE,
+        [Query.limit(100)]
       );
       return response;
     } catch (error) {
